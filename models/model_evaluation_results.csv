@@ -1,0 +1,4 @@
+Model,MAE,RMSE,R2 Score
+Stacking,23.4439,36.8879,0.8581
+Bagging,23.2262,37.7124,0.8516
+Boosting,34.6771,51.8342,0.7197
