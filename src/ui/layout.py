@@ -492,17 +492,31 @@ label, .stSelectbox label, .stNumberInput label, .stSlider label, .stMultiSelect
 }}
 
 /* Buttons */
-.stButton > button[kind="primary"] {{
-    background-color: {C["primary"]};
-    border-color: {C["primary"]};
+.stButton > button[kind="primary"],
+.stFormSubmitButton > button[kind="primary"],
+[data-testid="stFormSubmitButton"] > button,
+button[kind="primary"] {{
+    background-color: {C["primary"]} !important;
+    border-color: {C["primary"]} !important;
+    color: #FFFFFF !important;
     font-size: 1rem;
     font-weight: 600;
     padding: 0.6rem 1.25rem;
     border-radius: 9px;
 }}
-.stButton > button[kind="primary"]:hover {{
-    background-color: {C["secondary"]};
-    border-color: {C["secondary"]};
+.stButton > button[kind="primary"] p,
+.stFormSubmitButton > button[kind="primary"] p,
+[data-testid="stFormSubmitButton"] > button p,
+button[kind="primary"] p {{
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+}}
+.stButton > button[kind="primary"]:hover,
+.stFormSubmitButton > button[kind="primary"]:hover,
+[data-testid="stFormSubmitButton"] > button:hover,
+button[kind="primary"]:hover {{
+    background-color: {C["secondary"]} !important;
+    border-color: {C["secondary"]} !important;
 }}
 
 /* Footer */

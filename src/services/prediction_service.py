@@ -1,4 +1,5 @@
 """Prediction business logic for trained ensemble models. No UI code."""
+import math
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -10,25 +11,46 @@ class PredictionError(Exception):
     """Raised when prediction inputs or model inference fail."""
 
 
+def _normalize_sown_extent(sown_extent_ha: Optional[float]) -> float:
+    """Allow None/NaN so the model pipeline imputer can handle missing values; reject <= 0."""
+    if sown_extent_ha is None:
+        return float("nan")
+    try:
+        val = float(sown_extent_ha)
+    except (TypeError, ValueError) as exc:
+        raise PredictionError("Sown extent must be a numeric value.") from exc
+    if math.isnan(val):
+        return float("nan")
+    if val <= 0:
+        raise PredictionError("Sown extent must be greater than 0 hectares.")
+    return val
+
+
 def build_input_dataframe(
     district: str,
     year: int,
     season: str,
-    sown_extent_ha: float,
+    sown_extent_ha: Optional[float],
     features: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """Validate inputs and construct a single-row DataFrame using only allowed features.
 
     Explicitly excludes leakage columns (harvested_extent_ha, average_yield_kg_ha).
+    Missing sown_extent_ha (None or NaN) is preserved as NaN so the saved model's
+    SimpleImputer preprocessing pipeline handles it.
     """
     if not district or not str(district).strip():
         raise PredictionError("District must be provided.")
     if not season or not str(season).strip():
         raise PredictionError("Season must be provided.")
-    if year is None or int(year) < 1900 or int(year) > 2100:
+    try:
+        year_int = int(year)
+    except (TypeError, ValueError) as exc:
+        raise PredictionError("Year must be an integer between 1900 and 2100.") from exc
+    if year_int < 1900 or year_int > 2100:
         raise PredictionError("Year must be between 1900 and 2100.")
-    if sown_extent_ha is None or float(sown_extent_ha) <= 0:
-        raise PredictionError("Sown extent must be greater than 0 hectares.")
+
+    sown_val = _normalize_sown_extent(sown_extent_ha)
 
     expected = list(features) if features is not None else list(settings.PREDICTION_FEATURES)
     forbidden = [c for c in expected if c in settings.LEAKAGE_COLUMNS]
@@ -36,16 +58,16 @@ def build_input_dataframe(
         raise PredictionError(
             f"Leakage columns are not permitted as prediction inputs: {forbidden}"
         )
-    if set(expected) != set(settings.PREDICTION_FEATURES):
+    if list(expected) != list(settings.PREDICTION_FEATURES):
         raise PredictionError(
             f"Model features mismatch. Expected {settings.PREDICTION_FEATURES}, got {expected}."
         )
 
     row = {
         "district": str(district).strip(),
-        "year": int(year),
+        "year": year_int,
         "season": str(season).strip(),
-        "sown_extent_ha": float(sown_extent_ha),
+        "sown_extent_ha": sown_val,
     }
     return pd.DataFrame([row], columns=expected)
 
@@ -90,7 +112,7 @@ def predict_production(
     district: str,
     year: int,
     season: str,
-    sown_extent_ha: float,
+    sown_extent_ha: Optional[float],
     features: Optional[List[str]] = None,
 ) -> Dict[str, object]:
     """Run prediction for a single scenario with the chosen trained model."""
@@ -113,6 +135,7 @@ def predict_production(
             f"Prediction failed for model '{model_name}': {exc}"
         ) from exc
 
+    sown_out = None if pd.isna(input_df["sown_extent_ha"].iloc[0]) else float(input_df["sown_extent_ha"].iloc[0])
     horizon = classify_year_horizon(int(year))
     return {
         "model": model_name,
@@ -120,7 +143,7 @@ def predict_production(
         "district": str(district).strip(),
         "year": int(year),
         "season": str(season).strip(),
-        "sown_extent_ha": float(sown_extent_ha),
+        "sown_extent_ha": sown_out,
         "horizon": horizon,
     }
 
@@ -130,7 +153,7 @@ def predict_all_models(
     district: str,
     year: int,
     season: str,
-    sown_extent_ha: float,
+    sown_extent_ha: Optional[float],
     features: Optional[List[str]] = None,
 ) -> Dict[str, float]:
     """Compute predictions across all available models for side-by-side comparison."""

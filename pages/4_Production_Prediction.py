@@ -6,7 +6,6 @@ from config import settings
 from src.data.data_loader import get_dataset_overview
 from src.services.prediction_service import (
     PredictionError,
-    classify_year_horizon,
     predict_all_models,
     predict_production,
 )
@@ -92,12 +91,6 @@ with col_form:
             width="stretch",
         )
 
-    horizon_preview = classify_year_horizon(int(selected_year))
-    if horizon_preview["is_beyond_history"]:
-        st.warning(f"**Horizon Notice:** {horizon_preview['message']}")
-    else:
-        st.caption(f"ℹ️ {horizon_preview['message']}")
-
 with col_result:
     if submitted:
         try:
@@ -118,9 +111,6 @@ with col_result:
                 sown_extent_ha=float(sown_extent_ha),
                 features=features,
             )
-
-            if result["horizon"]["is_beyond_history"]:
-                st.warning(f"**Extrapolation Warning:** {result['horizon']['message']}")
 
             layout.render_html(
                 f"""
@@ -163,6 +153,9 @@ with col_result:
                 for name, val in all_preds.items()
             ]
             st.dataframe(pd.DataFrame(comp_rows), width="stretch", hide_index=True)
+
+            if result["horizon"]["is_beyond_history"]:
+                st.warning(f"**Note:** {result['horizon']['message']}")
 
         except PredictionError as exc:
             st.error(f"Prediction could not be completed: {exc}")
