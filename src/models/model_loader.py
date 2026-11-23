@@ -60,3 +60,21 @@ def load_features(path: Union[str, Path, None] = None) -> List[str]:
 def get_available_models(models: Dict[str, object]) -> List[str]:
     """Names of the required models that are present."""
     return [n for n in settings.MODEL_NAMES if n in models]
+
+
+def get_model_metadata(models: Dict[str, object]) -> List[Dict[str, str]]:
+    """Return display metadata for each loaded ensemble model."""
+    rows = []
+    for name in settings.MODEL_NAMES:
+        if name not in models:
+            continue
+        desc = settings.MODEL_DESCRIPTIONS.get(name, {})
+        rows.append(
+            {
+                "name": name,
+                "full_name": desc.get("full_name", name),
+                "estimator_type": type(models[name]).__name__,
+                "summary": desc.get("summary", ""),
+            }
+        )
+    return rows

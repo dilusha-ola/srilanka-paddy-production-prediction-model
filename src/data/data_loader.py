@@ -1,6 +1,6 @@
-"""Dataset loading and validation. Contains no UI code."""
+"""Dataset loading, validation, and non-destructive summary helpers. No UI code."""
 from pathlib import Path
-from typing import Iterable, Optional, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -47,6 +47,49 @@ def get_summary(df: pd.DataFrame) -> dict:
         "missing_by_column": {c: int(n) for c, n in missing.items()},
         "total_missing": int(missing.sum()),
     }
+
+
+def get_dataset_overview(df: pd.DataFrame) -> dict:
+    """Compute rich summary statistics dynamically from the loaded dataset."""
+    validate_columns(df)
+    summary = get_summary(df)
+    districts = sorted(df["district"].dropna().unique().tolist())
+    seasons = sorted(df["season"].dropna().unique().tolist())
+    min_year = int(df["year"].min())
+    max_year = int(df["year"].max())
+    season_counts = {
+        str(k): int(v) for k, v in df["season"].value_counts(dropna=False).items()
+    }
+    return {
+        **summary,
+        "district_count": len(districts),
+        "districts": districts,
+        "seasons": seasons,
+        "min_year": min_year,
+        "max_year": max_year,
+        "year_range_label": f"{min_year}\u2013{max_year}",
+        "season_counts": season_counts,
+        "total_production_000_mt": float(df[settings.TARGET_COLUMN].sum()),
+    }
+
+
+def filter_dataset(
+    df: pd.DataFrame,
+    districts: Optional[List[str]] = None,
+    seasons: Optional[List[str]] = None,
+    year_range: Optional[Tuple[int, int]] = None,
+) -> pd.DataFrame:
+    """Return a filtered view copy without modifying the input DataFrame."""
+    validate_columns(df)
+    mask = pd.Series(True, index=df.index)
+    if districts:
+        mask &= df["district"].isin(districts)
+    if seasons:
+        mask &= df["season"].isin(seasons)
+    if year_range is not None:
+        start_y, end_y = year_range
+        mask &= (df["year"] >= start_y) & (df["year"] <= end_y)
+    return df.loc[mask].copy()
 
 
 def get_features_and_target(df: pd.DataFrame):
