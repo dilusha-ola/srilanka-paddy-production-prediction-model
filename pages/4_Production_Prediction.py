@@ -154,9 +154,6 @@ with col_result:
             ]
             st.dataframe(pd.DataFrame(comp_rows), width="stretch", hide_index=True)
 
-            if result["horizon"]["is_beyond_history"]:
-                st.warning(f"**Note:** {result['horizon']['message']}")
-
         except PredictionError as exc:
             st.error(f"Prediction could not be completed: {exc}")
     else:
