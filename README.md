@@ -135,15 +135,21 @@ py -3.12 -m venv .venv
 # 2. Activate the virtual environment (Windows PowerShell)
 .venv\Scripts\Activate.ps1
 
-# 3. Install pinned dependencies
+# 3. Install runtime dependencies
 pip install -r requirements.txt
+```
+
+For local automated testing, also install `pytest`:
+
+```powershell
+pip install pytest
 ```
 
 ---
 
 ## 10. How to Run the Dashboard & Tests
 
-Start the Streamlit application from the activated `.venv`:
+Start the Streamlit application from the repository root with `.venv` active:
 
 ```powershell
 streamlit run app.py
@@ -157,9 +163,24 @@ pytest -v
 
 ---
 
-## 11. Project Limitations
+## 11. Deploying to Streamlit Community Cloud
 
-- **Limited input scope:** Only `district`, `year`, `season`, and `sown_extent_ha` are available as inputs; rainfall, irrigation levels, soil conditions, pest outbreaks, and fertilizer availability are not modeled.
-- **Historical boundary (`1978–2025`):** Tree-based ensembles cannot reliably extrapolate unprecedented structural shifts or climate extremes beyond the historical `1978–2015` training and `2016–2025` testing range.
-- **Data completeness:** `40` cells in the historical dataset are missing (`11` sown extent, `11` harvested extent, `18` average yield); missing `sown_extent_ha` values at inference time are imputed using the training median inside the saved pipeline rather than district-specific weather adjustments.
-- **Not an official forecast:** Outputs are statistical machine learning estimates and must not replace official reports from Sri Lankan agricultural authorities.
+This repository is ready for one-click deployment on **Streamlit Community Cloud** without modifying model artifacts or adding secrets:
+
+1. **Push your latest commits to GitHub** (`main` branch):
+   ```powershell
+   git push origin main
+   ```
+   Confirm that `data/sri_lanka_paddy_ml_training.csv`, `models/ensemble_models.joblib`, `models/model_features.joblib`, `models/model_evaluation_results.csv`, and `assets/paddy_hero.png` are present in the remote repository.
+2. **Sign in to [Streamlit Community Cloud](https://share.streamlit.io/)** with your GitHub account and click **Create app** (or **New app**).
+3. **Configure deployment settings:**
+   - **Repository:** `dilusha-ola/srilanka-paddy-production-prediction-model`
+   - **Branch:** `main`
+   - **Main file path:** `app.py`
+4. **Open Advanced settings** and select **Python 3.12** (or `3.11`/`3.13`; do **not** use Python 3.14 because `scikit-learn==1.6.1` has no 3.14 wheels).
+5. **Secrets:** Leave empty—this application requires no API keys or `.streamlit/secrets.toml`.
+6. Click **Deploy** and verify all five pages load cleanly.
+
+---
+
+
