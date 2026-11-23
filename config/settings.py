@@ -1,6 +1,8 @@
 """Central project configuration: paths, column names and model names."""
 from pathlib import Path
 
+APP_TITLE = "Sri Lankan Paddy Production Prediction"
+
 # ---- Paths -----------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
